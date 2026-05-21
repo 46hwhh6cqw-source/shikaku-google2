@@ -1,0 +1,6 @@
+{
+  "name": "エネルギー管理士・電験 分散学習サポーター",
+  "description": "科学的根拠に基づいた分散学習（忘却曲線対応）で、エネルギー管理士電気分野と電験一種の過去問、公式、タグ情報を効率よく学ぶためのFire HD 10向け学習支援アプリ。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
