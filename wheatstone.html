@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ホイートストンブリッジが成り立つ理由</title>
+<style>
+:root{color-scheme:dark;--bg:#06111c;--card:#071827;--ink:#eff8ff;--sub:#b8ccdd;--wire:#9fb9d1;--blue:#64b5ff;--orange:#ff9f6e;--green:#78efc4;--purple:#caa0ff;--red:#ff6b8a;--yellow:#ffd166}*{box-sizing:border-box}body{margin:0;background:radial-gradient(1000px 500px at 50% -140px,#1d4368,#06111c 60%,#02060b);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}.wrap{max-width:1180px;margin:auto;padding:14px}h1{font-size:clamp(24px,5vw,42px);margin:4px 0 8px}.lead{color:var(--sub);line-height:1.65;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr;gap:12px}.card{background:rgba(7,24,39,.96);border:1px solid #2e4b62;border-radius:20px;padding:12px;box-shadow:0 20px 60px #0008}.card h2{margin:0 0 8px;font-size:22px;color:#9fd1ff}.card p{margin:6px 0;color:#d7e8f4;line-height:1.65}.diagram{width:100%;height:auto;display:block}.formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:900;color:var(--yellow);font-size:22px}.small{font-size:14px;color:#9fb3c5}@media(min-width:950px){.grid{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>ホイートストンブリッジが成り立つ理由</h1>
+<p class="lead">見るものは抵抗そのものではなく、左右の途中点 <b>M,N</b> の電圧です。</p>
+<section class="grid">
+<div class="card">
+<h2>1. 回路は「2本の分圧器」</h2>
+<svg class="diagram" viewBox="0 0 900 620" aria-label="wheatstone bridge circuit">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#ffd166"/></marker></defs>
+<rect x="8" y="8" width="884" height="604" rx="22" fill="#081522" stroke="#2e4b62"/>
+<path d="M450 80 H230 V500 H450" fill="none" stroke="#9fb9d1" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M450 80 H670 V500 H450" fill="none" stroke="#9fb9d1" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="180" y="140" width="100" height="82" rx="16" fill="#2f2117" stroke="#ff9f6e" stroke-width="4"/><text x="230" y="193" text-anchor="middle" fill="#eff8ff" font-size="34" font-weight="900">R1</text>
+<rect x="180" y="350" width="100" height="82" rx="16" fill="#172d22" stroke="#78efc4" stroke-width="4"/><text x="230" y="403" text-anchor="middle" fill="#eff8ff" font-size="34" font-weight="900">R2</text>
+<rect x="620" y="140" width="100" height="82" rx="16" fill="#2f2117" stroke="#ff9f6e" stroke-width="4"/><text x="670" y="193" text-anchor="middle" fill="#eff8ff" font-size="34" font-weight="900">R3</text>
+<rect x="620" y="350" width="100" height="82" rx="16" fill="#172d22" stroke="#78efc4" stroke-width="4"/><text x="670" y="403" text-anchor="middle" fill="#eff8ff" font-size="34" font-weight="900">R4</text>
+<path d="M230 290 H360" stroke="#caa0ff" stroke-width="8" stroke-linecap="round"/><path d="M540 290 H670" stroke="#caa0ff" stroke-width="8" stroke-linecap="round"/>
+<circle cx="450" cy="290" r="58" fill="#1c1230" stroke="#caa0ff" stroke-width="5"/><text x="450" y="307" text-anchor="middle" fill="#caa0ff" font-size="48" font-weight="900">G</text>
+<circle cx="450" cy="80" r="12" fill="#eff8ff"/><text x="450" y="48" text-anchor="middle" fill="#eff8ff" font-size="28" font-weight="900">A</text>
+<circle cx="450" cy="500" r="12" fill="#eff8ff"/><text x="450" y="540" text-anchor="middle" fill="#eff8ff" font-size="28" font-weight="900">D</text>
+<circle cx="230" cy="290" r="12" fill="#eff8ff"/><text x="230" y="330" text-anchor="middle" fill="#eff8ff" font-size="28" font-weight="900">M</text>
+<circle cx="670" cy="290" r="12" fill="#eff8ff"/><text x="670" y="330" text-anchor="middle" fill="#eff8ff" font-size="28" font-weight="900">N</text>
+<circle cx="450" cy="500" r="38" fill="#102437" stroke="#64b5ff" stroke-width="4"/><text x="450" y="514" text-anchor="middle" fill="#64b5ff" font-size="38" font-weight="900">E</text>
+<text x="70" y="570" fill="#b8ccdd" font-size="22">G は M と N の電圧差を見るだけ</text>
+</svg>
+<p>左枝は <span class="formula">R1,R2</span> の分圧器。右枝は <span class="formula">R3,R4</span> の分圧器です。</p>
+</div>
+<div class="card">
+<h2>2. 同じ比なら途中点が同じ高さ</h2>
+<svg class="diagram" viewBox="0 0 900 620" aria-label="voltage divider heights">
+<rect x="8" y="8" width="884" height="604" rx="22" fill="#081522" stroke="#2e4b62"/>
+<line x1="105" y1="90" x2="105" y2="530" stroke="#7892aa" stroke-width="5"/>
+<text x="80" y="98" text-anchor="end" fill="#b8ccdd" font-size="24">90V</text><text x="80" y="535" text-anchor="end" fill="#b8ccdd" font-size="24">0V</text>
+<rect x="240" y="90" width="140" height="146" rx="18" fill="#3a2418" stroke="#ff9f6e" stroke-width="5"/><text x="310" y="175" text-anchor="middle" fill="#eff8ff" font-size="38" font-weight="900">R1</text>
+<rect x="240" y="236" width="140" height="294" rx="18" fill="#163324" stroke="#78efc4" stroke-width="5"/><text x="310" y="395" text-anchor="middle" fill="#eff8ff" font-size="38" font-weight="900">R2</text>
+<rect x="560" y="90" width="140" height="146" rx="18" fill="#3a2418" stroke="#ff9f6e" stroke-width="5"/><text x="630" y="175" text-anchor="middle" fill="#eff8ff" font-size="38" font-weight="900">R3</text>
+<rect x="560" y="236" width="140" height="294" rx="18" fill="#163324" stroke="#78efc4" stroke-width="5"/><text x="630" y="395" text-anchor="middle" fill="#eff8ff" font-size="38" font-weight="900">R4</text>
+<line x1="205" y1="236" x2="735" y2="236" stroke="#caa0ff" stroke-width="7"/>
+<circle cx="310" cy="236" r="11" fill="#eff8ff"/><text x="310" y="212" text-anchor="middle" fill="#eff8ff" font-size="30" font-weight="900">M</text>
+<circle cx="630" cy="236" r="11" fill="#eff8ff"/><text x="630" y="212" text-anchor="middle" fill="#eff8ff" font-size="30" font-weight="900">N</text>
+<text x="210" y="78" fill="#ff9f6e" font-size="24" font-weight="900">30V落ちる</text>
+<text x="210" y="580" fill="#78efc4" font-size="24" font-weight="900">60V落ちる</text>
+<text x="470" y="288" text-anchor="middle" fill="#caa0ff" font-size="30" font-weight="900">M と N が同じ電圧</text>
+<text x="470" y="330" text-anchor="middle" fill="#caa0ff" font-size="30" font-weight="900">→ G に流れない</text>
+<text x="310" y="575" text-anchor="middle" fill="#b8ccdd" font-size="24">左枝</text><text x="630" y="575" text-anchor="middle" fill="#b8ccdd" font-size="24">右枝</text>
+</svg>
+<p>例として <span class="formula">R1:R2 = R3:R4 = 1:2</span> なら、両方とも同じ割合で電圧が落ちます。</p>
+</div>
+<div class="card wide">
+<h2>結論</h2>
+<p><span class="formula">G=0</span> は、抵抗が同じという意味ではありません。意味は <span class="formula">V_M = V_N</span> です。</p>
+<p>左右の分圧比が同じなら、途中点の電圧が同じになります。だから検流計には電流が流れません。</p>
+<p class="formula">R1/R2 = R3/R4 → V_M = V_N → I_G = 0</p>
+<p class="small">見る順番：抵抗比 → 途中点の電圧 → Gに流れるか</p>
+</div>
+</section>
+</main>
+</body>
+</html>
