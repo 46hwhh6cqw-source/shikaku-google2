@@ -3,35 +3,147 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="refresh" content="0; url=./charge-motion/lab.html" />
-  <title>RLC回路と共振</title>
+  <title>電気学習ラボ</title>
   <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0E1116;
+      --panel: #161B22;
+      --line: #27313D;
+      --text: #E6EDF3;
+      --muted: #8B97A5;
+      --accent: #F2A93B;
+      --ok: #4FE08A;
+    }
+    * { box-sizing: border-box; }
     html, body {
       margin: 0;
       min-height: 100%;
-      background: #0E1116;
-      color: #E6EDF3;
+      background: var(--bg);
+      color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
     }
-    main {
-      min-height: 100svh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      text-align: center;
+    body {
+      padding: 18px;
     }
-    a {
-      color: #F2A93B;
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 18px 0 32px;
+    }
+    .hero {
+      padding: 18px 0 10px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: .02em;
+    }
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 12px;
+      border: 1px solid #31536d;
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--ok);
+      font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    a.card {
+      display: block;
+      padding: 15px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      color: inherit;
+      text-decoration: none;
+    }
+    a.card:active {
+      transform: translateY(1px);
+    }
+    .title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
       font-weight: 800;
+      font-size: 16px;
+    }
+    .tag {
+      flex: none;
+      color: var(--accent);
+      font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .desc {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+    .url {
+      margin-top: 8px;
+      color: var(--accent);
+      font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+      overflow-wrap: anywhere;
+    }
+    footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
   <main>
-    <div>
-      <p>RLC回路と共振を開いています…</p>
-      <p><a href="./charge-motion/lab.html">開かない場合はこちら</a></p>
-    </div>
+    <section class="hero">
+      <h1>電気学習ラボ</h1>
+      <p class="sub">回路・電荷・資格学習用のWebツール置き場。iPhoneでも見やすい入口ページです。</p>
+      <span class="badge">repo: 1145141919</span>
+    </section>
+
+    <section class="grid" aria-label="公開ページ一覧">
+      <a class="card" href="./charge-motion/lab.html">
+        <div class="title">
+          <span>RLC回路と共振</span>
+          <span class="tag">latest</span>
+        </div>
+        <p class="desc">直列RLC・並列RLC、共振、周波数応答、フェーザを確認する最新版ページ。</p>
+        <div class="url">./charge-motion/lab.html</div>
+      </a>
+
+      <a class="card" href="./charge-motion/">
+        <div class="title">
+          <span>回路を流れる電荷</span>
+          <span class="tag">basic</span>
+        </div>
+        <p class="desc">直流・交流で、導線内の電荷がどう動くかを見る単一ループの可視化ページ。</p>
+        <div class="url">./charge-motion/</div>
+      </a>
+
+      <a class="card" href="https://github.com/46hwhh6cqw-source/1145141919">
+        <div class="title">
+          <span>GitHubリポジトリ</span>
+          <span class="tag">source</span>
+        </div>
+        <p class="desc">この公開ページの元ファイル置き場。HTML/CSS/JavaScriptの中身を確認できます。</p>
+        <div class="url">github.com/46hwhh6cqw-source/1145141919</div>
+      </a>
+    </section>
+
+    <footer>
+      GitHub Pagesで公開中。トップページは自動転送ではなく、各ページへのリンク集として使います。
+    </footer>
   </main>
 </body>
 </html>
