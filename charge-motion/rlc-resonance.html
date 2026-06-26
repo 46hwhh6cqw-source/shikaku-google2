@@ -44,6 +44,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
 
   <div class="controls">
     <div class="seg b"><button data-mode="free" class="on">自由振動（弾く）</button><button data-mode="driven">強制（共振を見る）</button></div>
+    <div class="seg"><button data-view="charge">電荷の流れ</button><button data-view="energy">エネルギー(場)</button><button data-view="both" class="on">両方</button></div>
     <div class="row">
       <button id="play" class="primary">▶ 再生</button>
       <button id="pluck" class="pluck">⚡ Cに電荷を貯めて放す</button>
@@ -62,6 +63,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
       <div class="row"><input id="spd" type="range" min="0.3" max="2.2" step="0.1" value="1"></div>
     </div>
   </div>
+  <p class="sub" style="margin-top:12px">※ 模型のための誇張：実際の電子のドリフトは非常に遅く（〜mm/s）、極板の電荷の偏りは電子全体のごく一部、電荷数(24)も象徴的です。<b>エネルギーは導線の中ではなく周りの“場”をほぼ光速で伝わり、素子へ出入りします</b>（電荷が荷物のように運ぶわけではありません）。</p>
 </div>
 
 <script>
@@ -73,7 +75,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
          elec:"#F2A93B",mag:"#56C2E6",heat:"#E5683C",real:"#4FE08A",ghost:"#586374",ret:"#56C2E6"};
   var MONO="ui-monospace, SFMono-Regular, Menlo, monospace";
   var $=function(id){return document.getElementById(id);};
-  var st={mode:"free",playing:false,R:0.15,rIdx:0,spd:1};
+  var st={mode:"free",playing:false,R:0.15,rIdx:0,spd:1,view:"both"};
   var sim={q:0,i:0,t:0,heat:0};
   var envQ=1e-6,envI=1e-6,envE=1e-6, last=null, prevEc=0;
   var ctx;
@@ -92,6 +94,19 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     if(dir==="up"){ctx.moveTo(x,y-size);ctx.lineTo(x-size*0.8,y);ctx.lineTo(x+size*0.8,y);}else if(dir==="down"){ctx.moveTo(x,y+size);ctx.lineTo(x-size*0.8,y);ctx.lineTo(x+size*0.8,y);}
     else if(dir==="right"){ctx.moveTo(x+size,y);ctx.lineTo(x,y-size*0.8);ctx.lineTo(x,y+size*0.8);}else{ctx.moveTo(x-size,y);ctx.lineTo(x,y-size*0.8);ctx.lineTo(x,y+size*0.8);}
     ctx.closePath();ctx.fill();ctx.restore();}
+  // energy flow through the field (Poynting): arrows in the SPACE around a component,
+  // pointing inward (energy entering the field region) or outward (returning).
+  function energyFlux(cx,cy,rad,inward,mag,col){
+    var a=Math.min(mag,1);if(a<0.05)return;var len=5+9*a,n=4,k;
+    for(k=0;k<n;k++){var ang=k/n*6.2832,ox=Math.cos(ang),oy=Math.sin(ang);
+      var tail=inward?rad+len:rad,head=inward?rad:rad+len;
+      var hx=cx+ox*head,hy=cy+oy*head,tx=cx+ox*tail,ty=cy+oy*tail;
+      ctx.save();ctx.globalAlpha=0.35+0.55*a;ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(hx,hy);ctx.stroke();
+      var hang=Math.atan2(hy-ty,hx-tx);
+      ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx-5*Math.cos(hang-0.5),hy-5*Math.sin(hang-0.5));ctx.lineTo(hx-5*Math.cos(hang+0.5),hy-5*Math.sin(hang+0.5));ctx.closePath();ctx.fill();
+      ctx.restore();}
+  }
 
   // physics step
   function iprime(q,i){var drive=st.mode==="free"?0:Math.sin(curW*sim.t);return drive-st.R*i-q;}
@@ -116,6 +131,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     ctx=CIRC.cx;ctx.fillStyle=C.bg;ctx.fillRect(0,0,360,CIRC.h);
     var q=sim.q,i=sim.i,El=0.5*i*i;
     var qn=Math.max(-1,Math.min(q/envQ,1)), inorm=i/envI, eln=El/envE;
+    var ev=st.view!=="charge", chA=st.view==="energy"?0.18:0.92;
     // field tints (where the energy lives)
     ctx.save();ctx.globalAlpha=0.07+0.38*Math.min(Math.abs(qn),1);ctx.fillStyle=C.elec;ctx.fillRect(144,36,72,80);ctx.restore();
     ctx.save();ctx.globalAlpha=0.07+0.38*Math.min(Math.abs(eln),1);ctx.fillStyle=C.mag;ctx.fillRect(282,84,38,52);ctx.restore();
@@ -128,13 +144,13 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     // distribute the NQ charges: flowing in the wire, or stacked on a plate (total conserved)
     var s=0.42*CL*qn, nL=0,nR=0,k,p,pp;
     for(k=0;k<NQ;k++){var e=(k+0.5)/NQ*CL,a=e+s;
-      if(a>CL){p=stackPos("L",Math.min(nL++,11));disc(p[0],p[1],3.3,C.elec,0.95);}
-      else if(a<0){p=stackPos("R",Math.min(nR++,11));disc(p[0],p[1],3.3,C.elec,0.95);}
-      else{pp=condAt(a);disc(pp[0],pp[1],2.7,C.elec,0.9);}}
+      if(a>CL){p=stackPos("L",Math.min(nL++,11));disc(p[0],p[1],3.3,C.elec,0.95*chA);}
+      else if(a<0){p=stackPos("R",Math.min(nR++,11));disc(p[0],p[1],3.3,C.elec,0.95*chA);}
+      else{pp=condAt(a);disc(pp[0],pp[1],2.7,C.elec,0.9*chA);}}
     var sep=nL+nR, inWire=NQ-sep;
     // vacated slots (holes) on the depleted plate -> count is obviously conserved
-    for(k=0;k<nL;k++){p=stackPos("R",Math.min(k,11));ctx.save();ctx.strokeStyle=C.ghost;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p[0],p[1],3.3,0,6.2832);ctx.stroke();ctx.restore();}
-    for(k=0;k<nR;k++){p=stackPos("L",Math.min(k,11));ctx.save();ctx.strokeStyle=C.ghost;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p[0],p[1],3.3,0,6.2832);ctx.stroke();ctx.restore();}
+    for(k=0;k<nL;k++){p=stackPos("R",Math.min(k,11));ctx.save();ctx.globalAlpha=0.85*chA;ctx.strokeStyle=C.ghost;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p[0],p[1],3.3,0,6.2832);ctx.stroke();ctx.restore();}
+    for(k=0;k<nR;k++){p=stackPos("L",Math.min(k,11));ctx.save();ctx.globalAlpha=0.85*chA;ctx.strokeStyle=C.ghost;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p[0],p[1],3.3,0,6.2832);ctx.stroke();ctx.restore();}
     // electric field lines across the gap (grow with separated charge)
     if(sep>0){ctx.save();ctx.strokeStyle=C.elec;ctx.globalAlpha=0.15+0.5*Math.min(Math.abs(qn),1);var m;for(m=0;m<3;m++){var yy=pyT+4+m*7;line(pL+3,yy,pR-3,yy,C.elec,1);}ctx.restore();}
     var netL=nL-nR;
@@ -157,7 +173,16 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     ctx.save();ctx.fillStyle=C.panel;ctx.strokeStyle=st.mode==="free"?C.ghost:C.elec;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x1,107,12,0,6.2832);ctx.fill();ctx.stroke();
     if(st.mode!=="free"){ctx.strokeStyle=C.elec;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x1-7,107);ctx.bezierCurveTo(x1-4,101,x1-2,101,x1,107);ctx.bezierCurveTo(x1+2,113,x1+4,113,x1+7,107);ctx.stroke();}
     ctx.restore();
-    if(st.mode!=="free"){var ps=Math.sin(curW*sim.t)*i;if(Math.abs(ps)>0.02*envE){arrowT(x1+20,107,ps>0?"up":"down",6,ps>0?C.real:C.ret,0.95);}}
+    if(st.mode!=="free"){var ps0=Math.sin(curW*sim.t)*i;if(Math.abs(ps0)>0.02*envE){arrowT(x1+20,107,ps0>0?"up":"down",6,ps0>0?C.real:C.ret,0.95);}}
+    // energy flow through the FIELD (Poynting): in/out of each component region
+    if(ev){
+      var dEc=q*i, dEl=i*iprime(q,i), pwr=st.R*i*i, ps=st.mode==="free"?0:Math.sin(curW*sim.t)*i;
+      energyFlux(180,48,24,dEc>0,Math.abs(dEc)/envE,C.elec);      // C: energy in when charging
+      energyFlux(x2,110,21,dEl>0,Math.abs(dEl)/envE,C.mag);       // L: energy in when current builds
+      energyFlux(180,yb,17,true,pwr/(envE+1e-9),C.heat);         // R: always in -> heat (one-way)
+      if(st.mode!=="free")energyFlux(x1,107,16,ps<0,Math.abs(ps)/envE,ps>0?C.real:C.ret); // source
+      txt("エネルギーは“場”を通って素子へ出入り（電荷が運ぶのではない）",180,30,C.real,8.5,400,"center");
+    }
     // conserved-count readout
     txt("Cに分離 "+sep+" 個 ＋ 導線を流れる "+inWire+" 個 ＝ 合計 "+NQ+" 個（保存）",180,CIRC.h-7,C.muted,9.5,400,"center");
   }
@@ -220,6 +245,8 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   function resetSim(){sim={q:0,i:0,t:0,heat:0};envQ=1e-6;envI=1e-6;envE=1e-6;last=null;}
   function pluck(){st.mode="free";syncMode();sim={q:1.0,i:0,t:0,heat:0};envQ=1;envI=1e-6;envE=0.5;last=null;st.playing=true;setPlay();}
 
+  function syncView(){document.querySelectorAll("[data-view]").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-view")===st.view);});}
+  document.querySelectorAll("[data-view]").forEach(function(b){b.addEventListener("click",function(){st.view=b.getAttribute("data-view");syncView();});});
   document.querySelectorAll("[data-mode]").forEach(function(b){b.addEventListener("click",function(){st.mode=b.getAttribute("data-mode");syncMode();st.playing=false;setPlay();resetSim();});});
   $("play").addEventListener("click",function(){st.playing=!st.playing;last=null;setPlay();});
   $("pluck").addEventListener("click",pluck);
@@ -233,7 +260,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   $("spd").addEventListener("input",function(e){st.spd=parseFloat(e.target.value);$("sval").textContent=st.spd.toFixed(1)+"×";});
   window.addEventListener("resize",fitAll);
 
-  syncMode();fitAll();requestAnimationFrame(frame);
+  syncMode();syncView();fitAll();requestAnimationFrame(frame);
 })();
 </script>
 </body>
