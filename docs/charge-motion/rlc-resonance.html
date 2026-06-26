@@ -36,7 +36,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
 <body>
 <div class="wrap">
   <h1>RLCを目で理解する — 電荷・場のエネルギー</h1>
-  <p class="sub">流れるのは<b>電荷（電流）</b>。エネルギーは<b style="color:#F2A93B">Cの電界</b>と<b style="color:#56C2E6">Lの磁界</b>に貯まります。場に貯めて半周期後に返すのが<b>無効電力</b>、Rで熱になって戻らないのが<b>有効電力</b>。</p>
+  <p class="sub">電荷の総数は一定（保存）。<b style="color:#F2A93B">C</b>は電荷を<b>分けて溜める</b>＝電圧をつくり押し返す（ばね）。<b style="color:#56C2E6">L</b>は電荷を溜めず、<b>流れる電荷が磁場をつくり流れを保つ</b>（慣性）。場に貯めて返すのが<b>無効電力</b>、Rで熱になって戻らないのが<b>有効電力</b>。</p>
 
   <div class="panel"><canvas id="cCirc"></canvas></div>
   <div class="panel"><canvas id="cLedger"></canvas></div>
@@ -79,7 +79,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   var ctx;
 
   function setup(id,h){var cv=$(id);return{cv:cv,cx:cv.getContext("2d"),h:h};}
-  var CIRC=setup("cCirc",196), LED=setup("cLedger",118);
+  var CIRC=setup("cCirc",206), LED=setup("cLedger",118);
   function fitOne(o){var w=Math.min(o.cv.parentNode.clientWidth,504);if(w<10)w=320;var dpr=window.devicePixelRatio||1;
     o.cv.style.width=w+"px";o.cv.style.height=(w*o.h/360)+"px";o.cv.width=Math.round(w*dpr);o.cv.height=Math.round(w*o.h/360*dpr);
     o.cx.setTransform(o.cv.width/360,0,0,o.cv.width/360,0,0);}
@@ -104,58 +104,62 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     sim.heat+=st.R*((i+ni)/2)*((i+ni)/2)*dt;  // R i^2 dt
     sim.i=ni;sim.t+=dt;}
 
-  // ---- charge carriers along the conductor (open at the C gap) ----
-  var loop=[[188,170],[300,170],[300,50],[56,50],[56,170],[168,170]];
-  function carriers(qn){
-    var seg=[],tot=0,k;for(k=0;k<loop.length-1;k++){var a=loop[k],b=loop[k+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push({a:a,b:b,l:l});tot+=l;}
-    var disp=10*Math.max(-1,Math.min(qn,1)), nd=20,j;
-    for(j=0;j<nd;j++){var d=((j+0.5)/nd*tot+disp+tot)%tot,x=d,p;
-      for(p=0;p<seg.length;p++){if(x<=seg[p].l){var u=seg[p].l?x/seg[p].l:0;disc(seg[p].a[0]+(seg[p].b[0]-seg[p].a[0])*u,seg[p].a[1]+(seg[p].b[1]-seg[p].a[1])*u,2.7,C.elec,0.9);break;}x-=seg[p].l;}}
-  }
+  // open conductor (broken only at the capacitor gap). NQ charges, count conserved.
+  var x1=60,x2=300,yt=46,yb=168,pL=150,pR=210,pyT=38,pyB=58;
+  var cond=[[pR,yt],[x2,yt],[x2,yb],[x1,yb],[x1,yt],[pL,yt]];
+  var CL=(function(){var t=0,k;for(k=0;k<cond.length-1;k++)t+=Math.hypot(cond[k+1][0]-cond[k][0],cond[k+1][1]-cond[k][1]);return t;})();
+  function condAt(d){var x=d,k;for(k=0;k<cond.length-1;k++){var a=cond[k],b=cond[k+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(x<=l){var u=l?x/l:0;return [a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u];}x-=l;}return cond[cond.length-1];}
+  var NQ=24;
+  function stackPos(side,k){var col=Math.floor(k/6),row=k%6;return side==="L"?[158+col*9,64+row*9]:[202-col*9,64+row*9];}
 
   function drawCirc(){
     ctx=CIRC.cx;ctx.fillStyle=C.bg;ctx.fillRect(0,0,360,CIRC.h);
-    var q=sim.q,i=sim.i,Ec=0.5*q*q,El=0.5*i*i;
-    var qn=q/envQ, inorm=i/envI, ecn=Ec/envE, eln=El/envE;
-    // energy region tints
-    ctx.save();ctx.globalAlpha=0.10+0.5*Math.min(ecn,1);ctx.fillStyle=C.elec;ctx.fillRect(150,150,56,40);ctx.restore();
-    ctx.save();ctx.globalAlpha=0.10+0.5*Math.min(eln,1);ctx.fillStyle=C.mag;ctx.fillRect(280,82,40,56);ctx.restore();
-    // wires (open at C gap)
+    var q=sim.q,i=sim.i,El=0.5*i*i;
+    var qn=Math.max(-1,Math.min(q/envQ,1)), inorm=i/envI, eln=El/envE;
+    // field tints (where the energy lives)
+    ctx.save();ctx.globalAlpha=0.07+0.38*Math.min(Math.abs(qn),1);ctx.fillStyle=C.elec;ctx.fillRect(144,36,72,80);ctx.restore();
+    ctx.save();ctx.globalAlpha=0.07+0.38*Math.min(Math.abs(eln),1);ctx.fillStyle=C.mag;ctx.fillRect(282,84,38,52);ctx.restore();
+    // wires (gap only between the two plates at top)
     ctx.lineCap="round";
-    line(188,170,300,170,C.wire,2.6);line(300,170,300,138,C.wire,2.6);line(300,82,300,50,C.wire,2.6);
-    line(300,50,56,50,C.wire,2.6);line(56,50,56,170,C.wire,2.6);line(56,170,168,170,C.wire,2.6);
-    // carriers
-    carriers(qn);
-    // --- C : plates + electric field lines + charge ---
-    line(168,160,168,180,C.wire,3.2);line(188,160,188,180,C.wire,3.2);
-    if(Math.abs(qn)>0.04){ctx.save();ctx.strokeStyle=C.elec;ctx.globalAlpha=0.2+0.6*Math.min(Math.abs(qn),1);ctx.lineWidth=1;
-      var m;for(m=0;m<3;m++){var yy=164+m*6;line(170,yy,186,yy,C.elec,1);}ctx.restore();
-      var s=q>=0?1:-1,n=Math.round(Math.min(Math.abs(qn),1)*4),kk;
-      for(kk=0;kk<n;kk++){var yy=163+kk*5;txt(s>0?"+":"−",164,yy+3,s>0?C.elec:C.mag,9,700,"center");txt(s>0?"−":"+",192,yy+3,s>0?C.mag:C.elec,9,700,"center");}}
-    txt("C",178,196,C.elec,11,700,"center");
-    // --- L : coil + magnetic field ---
-    var cx=300,y0=82,y1=138,seg=(y1-y0)/4,r=seg/2,kk;
-    if(Math.abs(inorm)>0.04){ctx.save();ctx.strokeStyle=C.mag;ctx.globalAlpha=0.25+0.55*Math.min(Math.abs(inorm),1);
-      var rr;for(rr=0;rr<3;rr++){ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,(y0+y1)/2,7+rr*5,-1.1,1.1);ctx.stroke();}ctx.restore();}
-    ctx.save();ctx.strokeStyle=C.wire;ctx.lineWidth=2.6;for(kk=0;kk<4;kk++){var cyy=y0+seg*(kk+0.5);ctx.beginPath();ctx.arc(cx,cyy,r,Math.PI/2,-Math.PI/2,true);ctx.stroke();}ctx.restore();
-    txt("L",276,114,C.mag,11,700);
-    // --- R : resistor + heat ---
+    line(pR,yt,x2,yt,C.wire,2.6);line(x2,yt,x2,84,C.wire,2.6);line(x2,136,x2,yb,C.wire,2.6);
+    line(x2,yb,x1,yb,C.wire,2.6);line(x1,yb,x1,yt,C.wire,2.6);line(x1,yt,pL,yt,C.wire,2.6);
+    // plates
+    line(pL,pyT,pL,pyB,C.wire,3.2);line(pR,pyT,pR,pyB,C.wire,3.2);
+    // distribute the NQ charges: flowing in the wire, or stacked on a plate (total conserved)
+    var s=0.42*CL*qn, nL=0,nR=0,k,p,pp;
+    for(k=0;k<NQ;k++){var e=(k+0.5)/NQ*CL,a=e+s;
+      if(a>CL){p=stackPos("L",Math.min(nL++,11));disc(p[0],p[1],3.3,C.elec,0.95);}
+      else if(a<0){p=stackPos("R",Math.min(nR++,11));disc(p[0],p[1],3.3,C.elec,0.95);}
+      else{pp=condAt(a);disc(pp[0],pp[1],2.7,C.elec,0.9);}}
+    var sep=nL+nR, inWire=NQ-sep;
+    // vacated slots (holes) on the depleted plate -> count is obviously conserved
+    for(k=0;k<nL;k++){p=stackPos("R",Math.min(k,11));ctx.save();ctx.strokeStyle=C.ghost;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p[0],p[1],3.3,0,6.2832);ctx.stroke();ctx.restore();}
+    for(k=0;k<nR;k++){p=stackPos("L",Math.min(k,11));ctx.save();ctx.strokeStyle=C.ghost;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p[0],p[1],3.3,0,6.2832);ctx.stroke();ctx.restore();}
+    // electric field lines across the gap (grow with separated charge)
+    if(sep>0){ctx.save();ctx.strokeStyle=C.elec;ctx.globalAlpha=0.15+0.5*Math.min(Math.abs(qn),1);var m;for(m=0;m<3;m++){var yy=pyT+4+m*7;line(pL+3,yy,pR-3,yy,C.elec,1);}ctx.restore();}
+    var netL=nL-nR;
+    txt(netL>0?"＋":netL<0?"−":"",pL-9,34,netL>0?C.elec:C.mag,12,700,"center");
+    txt(netL>0?"−":netL<0?"＋":"",pR+9,34,netL>0?C.mag:C.elec,12,700,"center");
+    txt("C",180,128,C.elec,11,700,"center");
+    txt("電界：分かれた電荷が電圧をつくり、押し返す（ばね）",180,16,C.muted,9,400,"center");
+    // L coil + magnetic field: made by MOVING charge; it keeps the flow going
+    var cx=x2,y0=88,y1=132,seg=(y1-y0)/4,r=seg/2;
+    if(Math.abs(inorm)>0.04){ctx.save();ctx.strokeStyle=C.mag;ctx.globalAlpha=0.25+0.5*Math.min(Math.abs(inorm),1);var rr;for(rr=0;rr<3;rr++){ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,(y0+y1)/2,7+rr*5,-1.15,1.15);ctx.stroke();}ctx.restore();}
+    ctx.save();ctx.strokeStyle=C.wire;ctx.lineWidth=2.6;for(k=0;k<4;k++){var cyy=y0+seg*(k+0.5);ctx.beginPath();ctx.arc(cx,cyy,r,Math.PI/2,-Math.PI/2,true);ctx.stroke();}ctx.restore();
+    txt("L",274,114,C.mag,11,700);
+    txt("磁界：流れる電荷がつくり、流れを保つ（慣性）",x2-4,158,C.mag,8.5,400,"end");
+    // R + heat
     var hN=Math.min(st.R*i*i/(envE+1e-9),1);
-    ctx.fillStyle=C.panel;ctx.strokeStyle=C.wire;ctx.lineWidth=2;ctx.beginPath();ctx.rect(160,43,36,14);ctx.fill();ctx.stroke();
-    if(hN>0.02){disc(178,50,12,C.heat,0.5*hN); for(kk=0;kk<3;kk++)disc(170+kk*8,38-((sim.t*30+kk*9)%14),1.6,C.heat,0.5*hN);}
-    txt("R",178,36,C.muted,11,400,"center");
-    // --- source ---
-    ctx.save();ctx.fillStyle=C.panel;ctx.strokeStyle=st.mode==="free"?C.ghost:C.elec;ctx.lineWidth=2;ctx.beginPath();ctx.arc(56,110,12,0,6.2832);ctx.fill();ctx.stroke();
-    if(st.mode!=="free"){ctx.strokeStyle=C.elec;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(49,110);ctx.bezierCurveTo(52,104,54,104,56,110);ctx.bezierCurveTo(58,116,60,116,63,110);ctx.stroke();}
-    ctx.restore();txt(st.mode==="free"?"(電源OFF)":"電源",56,138,C.muted,8.5,400,"center");
-    // --- energy direction markers (fill vs return) ---
-    var dEc=q*i;                 // dE_C/dt: >0 filling C
-    var dEl=i*iprime(q,i);       // dE_L/dt: >0 filling L
-    if(Math.abs(dEc)>0.02*envE){arrowT(178,150,dEc>0?"down":"up",6,C.elec,0.9);txt(dEc>0?"貯":"返",206,150,C.elec,8.5);}
-    if(Math.abs(dEl)>0.02*envE){arrowT(322,110,dEl>0?"left":"right",6,C.mag,0.9);txt(dEl>0?"貯":"返",322,128,C.mag,8.5);}
-    // source energy exchange (driven): >0 supplied to circuit, <0 returned to source = reactive burden
-    if(st.mode!=="free"){var ps=Math.sin(curW*sim.t)*i; if(Math.abs(ps)>0.02*envE){arrowT(82,110,ps>0?"right":"left",6,ps>0?C.real:C.ret,0.95);txt(ps>0?"供給":"返",82,100,ps>0?C.real:C.ret,8.5,400,"center");}}
-    txt("電荷が流れ → 場にエネルギーを貯めて返す",180,14,C.muted,9.5,400,"center");
+    ctx.fillStyle=C.panel;ctx.strokeStyle=C.wire;ctx.lineWidth=2;ctx.beginPath();ctx.rect(162,yb-7,36,14);ctx.fill();ctx.stroke();
+    if(hN>0.02){disc(180,yb,12,C.heat,0.5*hN);}
+    txt("R",180,yb+16,C.muted,11,400,"center");
+    // source
+    ctx.save();ctx.fillStyle=C.panel;ctx.strokeStyle=st.mode==="free"?C.ghost:C.elec;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x1,107,12,0,6.2832);ctx.fill();ctx.stroke();
+    if(st.mode!=="free"){ctx.strokeStyle=C.elec;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x1-7,107);ctx.bezierCurveTo(x1-4,101,x1-2,101,x1,107);ctx.bezierCurveTo(x1+2,113,x1+4,113,x1+7,107);ctx.stroke();}
+    ctx.restore();
+    if(st.mode!=="free"){var ps=Math.sin(curW*sim.t)*i;if(Math.abs(ps)>0.02*envE){arrowT(x1+20,107,ps>0?"up":"down",6,ps>0?C.real:C.ret,0.95);}}
+    // conserved-count readout
+    txt("Cに分離 "+sep+" 個 ＋ 導線を流れる "+inWire+" 個 ＝ 合計 "+NQ+" 個（保存）",180,CIRC.h-7,C.muted,9.5,400,"center");
   }
 
   function drawLedger(){
