@@ -39,6 +39,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   <p class="sub">電荷の総数は一定（保存）。<b style="color:#F2A93B">C</b>は電荷を<b>分けて溜める</b>＝電圧をつくり押し返す（ばね）。<b style="color:#56C2E6">L</b>は電荷を溜めず、<b>流れる電荷が磁場をつくり流れを保つ</b>（慣性）。場に貯めて返すのが<b>無効電力</b>、Rで熱になって戻らないのが<b>有効電力</b>。</p>
 
   <div class="panel"><canvas id="cCirc"></canvas></div>
+  <div class="panel"><canvas id="cMech"></canvas></div>
   <div class="panel"><canvas id="cLedger"></canvas></div>
   <div id="expl" class="expl"></div>
 
@@ -48,6 +49,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     <div class="row">
       <button id="play" class="primary">▶ 再生</button>
       <button id="pluck" class="pluck">⚡ Cに電荷を貯めて放す</button>
+      <button id="step" class="ghost" style="min-width:92px">▷ 局面</button>
       <button id="reset" class="ghost">⟲</button>
     </div>
     <div id="freqWrap" class="hide">
@@ -77,15 +79,16 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   var $=function(id){return document.getElementById(id);};
   var st={mode:"free",playing:false,R:0.15,rIdx:0,spd:1,view:"both"};
   var sim={q:0,i:0,t:0,heat:0};
-  var envQ=1e-6,envI=1e-6,envE=1e-6, last=null, prevEc=0;
+  var envQ=1e-6,envI=1e-6,envE=1e-6, last=null, prevEc=0, trail=[];
   var ctx;
 
   function setup(id,h){var cv=$(id);return{cv:cv,cx:cv.getContext("2d"),h:h};}
-  var CIRC=setup("cCirc",206), LED=setup("cLedger",118);
+  var CIRC=setup("cCirc",206), MECH=setup("cMech",132), LED=setup("cLedger",118);
   function fitOne(o){var w=Math.min(o.cv.parentNode.clientWidth,504);if(w<10)w=320;var dpr=window.devicePixelRatio||1;
     o.cv.style.width=w+"px";o.cv.style.height=(w*o.h/360)+"px";o.cv.width=Math.round(w*dpr);o.cv.height=Math.round(w*o.h/360*dpr);
     o.cx.setTransform(o.cv.width/360,0,0,o.cv.width/360,0,0);}
-  function fitAll(){fitOne(CIRC);fitOne(LED);}
+  function fitAll(){fitOne(CIRC);fitOne(MECH);fitOne(LED);}
+  function phaseIdx(){var a=(Math.atan2(sim.i/envI,sim.q/envQ)+6.2832)%6.2832;return Math.floor(a/(Math.PI/2));}
 
   function line(x1,y1,x2,y2,col,lw){ctx.strokeStyle=col;ctx.lineWidth=lw||1;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
   function disc(x,y,r,col,a){ctx.save();ctx.globalAlpha=a==null?1:a;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();ctx.restore();}
@@ -187,6 +190,34 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     txt("Cに分離 "+sep+" 個 ＋ 導線を流れる "+inWire+" 個 ＝ 合計 "+NQ+" 個（保存）",180,CIRC.h-7,C.muted,9.5,400,"center");
   }
 
+  // MECHANISM: phase loop of charge(q) vs current(i).  Circle = keeps oscillating on
+  // its own; spiral in = R damping; spiral out = resonance growth.
+  function drawMech(){
+    ctx=MECH.cx;ctx.fillStyle=C.bg;ctx.fillRect(0,0,360,MECH.h);
+    var cx=86,cy=72,Rr=38,k;
+    txt("メカニズム：電荷 q ⇄ 電流 i のループ",12,15,C.muted,9.5);
+    line(cx-Rr-10,cy,cx+Rr+10,cy,C.grid,1);line(cx,cy-Rr-10,cx,cy+Rr+10,C.grid,1);
+    ctx.save();ctx.strokeStyle=C.ghost;ctx.globalAlpha=0.55;ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(cx,cy,Rr,0,6.2832);ctx.stroke();ctx.restore();
+    // comet: project each recent (q,i) onto the loop by its phase angle (amplitude-independent)
+    var n=trail.length,from=Math.max(0,n-44);
+    for(k=from;k<n;k++){var tq=trail[k].q,ti=trail[k].i,mg=Math.hypot(tq,ti)||1;var x=cx+tq/mg*Rr,y=cy-ti/mg*Rr;disc(x,y,2,C.elec,0.12+0.6*(k-from)/44);}
+    var mg=Math.hypot(sim.q,sim.i),mx,my;
+    if(mg<1e-7){mx=cx+Rr;my=cy;}else{mx=cx+sim.q/mg*Rr;my=cy-sim.i/mg*Rr;}
+    ctx.save();ctx.strokeStyle=C.text;ctx.globalAlpha=0.5;ctx.lineWidth=1;ctx.beginPath();ctx.arc(mx,my,7,0,6.2832);ctx.stroke();ctx.restore();
+    disc(mx,my,4.2,C.elec,1);
+    txt("C満タン",cx+Rr+10,cy+3,C.elec,8,400,"start");
+    txt("電流最大",cx,cy-Rr-4,C.mag,8,400,"center");
+    txt("C逆",cx-Rr-10,cy+3,C.elec,8,400,"end");
+    txt("電流最大(逆)",cx,cy+Rr+13,C.mag,8,400,"center");
+    var rx=176;
+    txt("回り続ける＝自励振動：",rx,28,C.text,9.5,700);
+    txt("①Cの電圧が電流を押す",rx,44,C.muted,9);
+    txt("②電流がCを逆に充電する",rx,57,C.muted,9);
+    txt("→ ①に戻る（永久に回る）",rx,70,C.muted,9);
+    txt("Rあり：一周ごとに縮む＝減衰",rx,90,C.heat,9);
+    txt("共振：一周ごとに育つ＝成長",rx,104,C.real,9);
+  }
+
   function drawLedger(){
     ctx=LED.cx;ctx.fillStyle=C.bg;ctx.fillRect(0,0,360,LED.h);
     var Ec=0.5*sim.q*sim.q,El=0.5*sim.i*sim.i,store=Ec+El,tot=store+sim.heat;
@@ -212,17 +243,17 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   }
 
   function updateExpl(){
-    var el=$("expl"),Ec=0.5*sim.q*sim.q,El=0.5*sim.i*sim.i,s,col=C.real;
+    var el=$("expl"),s,col=C.real;
     var nq=Math.abs(sim.q)/envQ, ni=Math.abs(sim.i)/envI, dEc=sim.q*sim.i;
     if(!st.playing && sim.q===0 && sim.i===0){
-      s=st.mode==="free"?"「⚡Cに電荷を貯めて放す」を押すと、電荷が L↔C を往復。電界と磁界が交互に満ち、Rがあれば少しずつ熱になって減衰します。":"▶ 再生。f を f₀ に合わせると、電源が無効分を出さずに済む＝共振。";col=C.muted;
-    } else if(nq>0.82){s="Cが満タン：電荷が極板に最大、電流ゼロ。エネルギーは全部 電界 に（折り返し）。";col=C.elec;}
-    else if(ni>0.82){s="Lに最大電流：極板は空、電荷が最速。エネルギーは全部 磁界 に。";col=C.mag;}
-    else if(dEc>0){s="磁界 → 電界：電流が電荷を運び C を充電中（Lのエネルギーが C へ戻る/移る）。";col=C.elec;}
-    else{s="電界 → 磁界：C が放電し電流を増やす（C のエネルギーが L へ移る）。";col=C.mag;}
-    if(st.mode==="driven"&&st.playing&&Math.abs(st.rIdx)>=0.08){s="共振から外れ（"+(st.rIdx>0?"誘導性":"容量性")+"）：電源が無効エネルギーを往復で負担（左の電源矢印が大きく往復）。f₀へ寄せると往復が減ります。";col=C.muted;}
-    if(st.mode==="driven"&&Math.abs(st.rIdx)<0.02&&st.playing)s="⚡共振(f=f₀)：LとCが直接エネルギーを渡し合い、電源は R の消費分（有効）だけ供給。無効の往復は L↔C 内で完結。";
-    if(st.R<0.001&&st.mode==="free"&&st.playing)s="R=0：熱で失わないので C+L 合計は一定のまま永久に往復＝純粋な無効エネルギーの行き来。";
+      s=st.mode==="free"?"「⚡Cに電荷を貯めて放す」か「▷ 局面」で開始。電荷が L↔C を往復する“しくみ”を、原因→結果で追えます。":"▶ 再生。f を f₀ に合わせると共振します。";col=C.muted;
+    } else if(nq>0.82){s="【C満タン】原因：極板に電荷がたまり電圧が最大。→ 結果：その電圧が電流を押し始める。電流はまだ0＝折り返し点。";col=C.elec;}
+    else if(ni>0.82){s="【電流最大】原因：押す電圧は0。→ 結果：Lの磁場が“流れを止めまい”として電流を保ち、反対側へCを充電し続ける（慣性）。";col=C.mag;}
+    else if(dEc<0){s="【C放電中】原因：Cの電圧が電流を押す。→ 結果：電流が増え、磁場にエネルギーがたまる（電界→磁界）。";col=C.mag;}
+    else{s="【C充電中】原因：Lの電流が流れ続ける。→ 結果：電荷を運んでCを充電し、逆向きの電圧を育てる（磁界→電界）。";col=C.elec;}
+    if(st.mode==="driven"&&st.playing&&Math.abs(st.rIdx)<0.02)s="【共振 f=f₀】原因：電源の押しが電流と同じタイミング（同位相）。→ 結果：毎サイクル少しずつエネルギーが積み増し、振幅が成長（ブランコを良い時に押すのと同じ）。";
+    else if(st.mode==="driven"&&st.playing&&Math.abs(st.rIdx)>=0.08)s="【共振から外れ】原因：電源の押しと電流がずれる。→ 結果：押す分と戻す分が相殺し成長しにくい（無効の往復が増える）。f₀へ寄せると揃う。";
+    if(st.R<0.001&&st.mode==="free"&&st.playing)s="【R=0】熱で失わないので往復が永久に続く＝純粋な無効エネルギーの往復（位相図は真円）。";
     el.textContent=s;el.style.borderLeftColor=col;
   }
 
@@ -234,7 +265,9 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
     envQ=Math.max(envQ*0.992,Math.abs(sim.q),1e-6);
     envI=Math.max(envI*0.992,Math.abs(sim.i),1e-6);
     envE=Math.max(envE*0.992,Ec+El,1e-6);
-    drawCirc();drawLedger();updateExpl();
+    if(st.playing){trail.push({q:sim.q,i:sim.i});if(trail.length>420)trail.shift();
+      if(st.stepping&&phaseIdx()!==st.stepFrom){st.playing=false;st.stepping=false;setPlay();}}
+    drawCirc();drawMech();drawLedger();updateExpl();
     requestAnimationFrame(frame);
   }
 
@@ -242,14 +275,17 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
   function syncMode(){document.querySelectorAll("[data-mode]").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-mode")===st.mode);});
     $("freqWrap").classList.toggle("hide",st.mode!=="driven");$("pluck").classList.toggle("hide",st.mode!=="free");}
   function setPlay(){$("play").textContent=st.playing?"⏸ 一時停止":"▶ 再生";}
-  function resetSim(){sim={q:0,i:0,t:0,heat:0};envQ=1e-6;envI=1e-6;envE=1e-6;last=null;}
-  function pluck(){st.mode="free";syncMode();sim={q:1.0,i:0,t:0,heat:0};envQ=1;envI=1e-6;envE=0.5;last=null;st.playing=true;setPlay();}
+  function resetSim(){sim={q:0,i:0,t:0,heat:0};envQ=1e-6;envI=1e-6;envE=1e-6;last=null;trail=[];st.stepping=false;}
+  function pluck(){st.mode="free";syncMode();sim={q:1.0,i:0,t:0,heat:0};envQ=1;envI=1e-6;envE=0.5;last=null;trail=[];st.playing=true;setPlay();}
 
   function syncView(){document.querySelectorAll("[data-view]").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-view")===st.view);});}
   document.querySelectorAll("[data-view]").forEach(function(b){b.addEventListener("click",function(){st.view=b.getAttribute("data-view");syncView();});});
   document.querySelectorAll("[data-mode]").forEach(function(b){b.addEventListener("click",function(){st.mode=b.getAttribute("data-mode");syncMode();st.playing=false;setPlay();resetSim();});});
   $("play").addEventListener("click",function(){st.playing=!st.playing;last=null;setPlay();});
   $("pluck").addEventListener("click",pluck);
+  $("step").addEventListener("click",function(){
+    if(st.mode==="free"&&Math.abs(sim.q)<1e-6&&Math.abs(sim.i)<1e-6){pluck();}
+    st.stepFrom=phaseIdx();st.stepping=true;st.playing=true;last=null;setPlay();});
   $("reset").addEventListener("click",function(){st.playing=false;setPlay();resetSim();});
   $("freq").addEventListener("input",function(e){st.rIdx=parseFloat(e.target.value);$("fval").textContent=Math.pow(10,st.rIdx).toFixed(2);});
   $("fdn").addEventListener("click",function(){st.rIdx=Math.max(st.rIdx-0.02,-0.7);$("freq").value=st.rIdx;$("fval").textContent=Math.pow(10,st.rIdx).toFixed(2);});
