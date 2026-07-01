@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="課目Ⅱノート">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>エネルギー管理士 課目Ⅱノート</title>
+<style>
+html,body{margin:0;min-height:100%;background:#fbf7ee;color:#23314e;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;-webkit-text-size-adjust:100%}
+main{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center}
+.box{max-width:520px;background:#fffdf8;border:1px solid #e6ddca;border-radius:18px;padding:22px;box-shadow:0 6px 22px rgba(40,40,80,.08)}
+h1{font-size:1.2rem;margin:.2rem 0 .5rem}p{margin:.4rem 0;color:#4a5878}
+</style>
+</head>
+<body>
+<main><div class="box"><h1>読み込み中…</h1><p>初回だけ少し待って。</p></div></main>
+<script>
+(async()=>{
+  const count=13;
+  try{
+    const files=Array.from({length:count},(_,i)=>`data/part${String(i).padStart(2,'0')}.txt`);
+    const parts=await Promise.all(files.map(async f=>{
+      const r=await fetch(f,{cache:'force-cache'});
+      if(!r.ok)throw new Error(`${f}: ${r.status}`);
+      return (await r.text()).trim();
+    }));
+    const b64=parts.join('');
+    if(b64.length!==50480)throw new Error(`データ長が違います: ${b64.length}`);
+    const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    if(!('DecompressionStream' in window))throw new Error('このSafariはgzip展開に非対応です。iOSを更新してSafariで開いてください。');
+    const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const html=await new Response(stream).text();
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(e){
+    document.body.innerHTML=`<main><div class="box"><h1>読み込み失敗</h1><p>${String(e.message||e)}</p><p>Safariで再読み込みして。GitHub Pages反映直後なら1〜2分待って。</p></div></main>`;
+  }
+})();
+</script>
+</body>
+</html>
